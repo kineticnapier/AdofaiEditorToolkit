@@ -101,7 +101,11 @@ msbuild .\src\ADOFAI.EditorToolkit.ADOFAI\ADOFAI.EditorToolkit.ADOFAI.csproj `
 - `ADOFAI.EditorToolkit.ADOFAI.dll`
 - `ADOFAI.EditorToolkit.xml`
 
-現時点ではGit repository化、NuGet package化、ライセンス確定は行っていません。
+Git repositoryは公開済みです。NuGet package化とライセンス確定はまだ行っていません。preview段階では`artifacts/Release`も参照用に残し、API安定後はversioned GitHub Releaseへ移す予定です。
+
+## MultiTileEditorでの実戦投入
+
+`ADOFAIMultiTileEditor`を最初の実利用側として、まず重複しているEvent APIを置き換え、その後Transactionをgenerationへ導入する方針です。詳細は[docs/INTEGRATION-MULTITILE.md](docs/INTEGRATION-MULTITILE.md)を参照してください。
 
 ## 次の段階
 
