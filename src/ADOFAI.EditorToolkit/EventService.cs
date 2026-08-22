@@ -5,14 +5,38 @@ namespace ADOFAI.EditorToolkit
 {
     public sealed class EventService
     {
+        private readonly object _level;
+        private readonly ILevelScopedEventBackend _levelBackend;
+
         internal EventService(IEventBackend backend)
+            : this(backend, null)
+        {
+        }
+
+        private EventService(IEventBackend backend, object level)
         {
             Backend = backend ?? throw new ArgumentNullException(nameof(backend));
+            _level = level;
+            _levelBackend = level == null ? null : backend as ILevelScopedEventBackend;
+
+            if (level != null && _levelBackend == null)
+                throw new NotSupportedException(
+                    "This event backend does not support operations against detached LevelData instances.");
         }
 
         internal IEventBackend Backend { get; }
 
-        /// <summary>イベントを生成し、現在のLevelDataへ直ちに追加する。</summary>
+        /// <summary>
+        /// Returns an event service scoped to the supplied LevelData-like object instead of the
+        /// level currently mounted in the stock editor.
+        /// </summary>
+        public EventService ForLevel(object level)
+        {
+            if (level == null) throw new ArgumentNullException(nameof(level));
+            return new EventService(Backend, level);
+        }
+
+        /// <summary>イベントを生成し、対象のLevelDataへ直ちに追加する。</summary>
         public EventHandle Create(string eventName, int floor, EventCollection collection = EventCollection.Auto)
         {
             if (string.IsNullOrWhiteSpace(eventName))
@@ -26,7 +50,7 @@ namespace ADOFAI.EditorToolkit
             try
             {
                 raw = Backend.Create(eventName, floor);
-                Backend.Add(raw, collection);
+                Add(raw, collection);
             }
             catch (Exception ex)
             {
@@ -48,7 +72,7 @@ namespace ADOFAI.EditorToolkit
             if (query.Collection == EventCollection.Auto)
                 throw new ArgumentException("Auto is only valid when creating an event. Use All, Actions, or Decorations for queries.", nameof(query));
             var result = new List<EventHandle>();
-            foreach (var raw in Backend.Enumerate(query.Collection))
+            foreach (var raw in Enumerate(query.Collection))
             {
                 var handle = new EventHandle(this, raw);
                 if (query.Matches(handle)) result.Add(handle);
@@ -99,6 +123,20 @@ namespace ADOFAI.EditorToolkit
             }
         }
 
+        internal EventCollection GetCollection(object raw)
+        {
+            return _level == null
+                ? Backend.GetCollection(raw)
+                : _levelBackend.GetCollectionFromLevel(_level, raw);
+        }
+
+        internal bool Remove(object raw)
+        {
+            return _level == null
+                ? Backend.Remove(raw)
+                : _levelBackend.RemoveFromLevel(_level, raw);
+        }
+
         internal void EnsureProperty(object raw, string key)
         {
             if (raw == null) throw new ArgumentNullException(nameof(raw));
@@ -106,6 +144,21 @@ namespace ADOFAI.EditorToolkit
             if (!Backend.HasProperty(raw, key))
                 throw new EventPropertyException(
                     "Event '" + Backend.GetName(raw) + "' does not define property '" + key + "'.");
+        }
+
+        private void Add(object raw, EventCollection collection)
+        {
+            if (_level == null)
+                Backend.Add(raw, collection);
+            else
+                _levelBackend.AddToLevel(_level, raw, collection);
+        }
+
+        private IEnumerable<object> Enumerate(EventCollection collection)
+        {
+            return _level == null
+                ? Backend.Enumerate(collection)
+                : _levelBackend.EnumerateFromLevel(_level, collection);
         }
     }
 }
