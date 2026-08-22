@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ADOFAI.EditorToolkit</name>
+    </assembly>
+    <members>
+        <member name="T:ADOFAI.EditorToolkit.DelegateEditorBackend">
+            <summary>ADOFAI固有コードを数個のdelegateだけで接続するbackend。</summary>
+        </member>
+        <member name="T:ADOFAI.EditorToolkit.Editor">
+            <summary>実行中のstock editorを操作するための入口。</summary>
+        </member>
+        <member name="F:ADOFAI.EditorToolkit.EventCollection.Auto">
+            <summary>
+            Create時にイベントmetadataから追加先を決める。Queryには使用できない。
+            </summary>
+        </member>
+        <member name="M:ADOFAI.EditorToolkit.EventService.Create(System.String,System.Int32,ADOFAI.EditorToolkit.EventCollection)">
+            <summary>イベントを生成し、現在のLevelDataへ直ちに追加する。</summary>
+        </member>
+        <member name="T:ADOFAI.EditorToolkit.IEditorBackend">
+            <summary>ADOFAIのバージョン固有APIとToolkit本体の境界。</summary>
+        </member>
+        <member name="T:ADOFAI.EditorToolkit.IEventBackend">
+            <summary>LevelEventの生成・metadata・保存方法を隠蔽する。</summary>
+        </member>
+    </members>
+</doc>

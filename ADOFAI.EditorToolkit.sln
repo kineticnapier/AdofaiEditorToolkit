@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADOFAI.EditorToolkit", "src\ADOFAI.EditorToolkit\ADOFAI.EditorToolkit.csproj", "{747F2A69-144F-49C4-B827-33DE5C0A1802}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADOFAI.EditorToolkit.Tests", "tests\ADOFAI.EditorToolkit.Tests\ADOFAI.EditorToolkit.Tests.csproj", "{53A26F10-1117-4E67-B98D-F09D80CD44E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADOFAI.EditorToolkit.ADOFAI", "src\ADOFAI.EditorToolkit.ADOFAI\ADOFAI.EditorToolkit.ADOFAI.csproj", "{7B596ECD-54F2-4B95-BE69-D137CC7C6B07}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{747F2A69-144F-49C4-B827-33DE5C0A1802}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{747F2A69-144F-49C4-B827-33DE5C0A1802}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{747F2A69-144F-49C4-B827-33DE5C0A1802}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{747F2A69-144F-49C4-B827-33DE5C0A1802}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53A26F10-1117-4E67-B98D-F09D80CD44E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53A26F10-1117-4E67-B98D-F09D80CD44E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53A26F10-1117-4E67-B98D-F09D80CD44E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53A26F10-1117-4E67-B98D-F09D80CD44E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B596ECD-54F2-4B95-BE69-D137CC7C6B07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B596ECD-54F2-4B95-BE69-D137CC7C6B07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B596ECD-54F2-4B95-BE69-D137CC7C6B07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B596ECD-54F2-4B95-BE69-D137CC7C6B07}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
