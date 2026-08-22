@@ -15,7 +15,7 @@ namespace ADOFAI.EditorToolkit
         public object Raw { get; }
         public string Name { get { return _owner.Backend.GetName(Raw); } }
         public int Floor { get { return _owner.Backend.GetFloor(Raw); } }
-        public EventCollection Collection { get { return _owner.Backend.GetCollection(Raw); } }
+        public EventCollection Collection { get { return _owner.GetCollection(Raw); } }
 
         public EventHandle Set(string key, object value)
         {
@@ -57,7 +57,7 @@ namespace ADOFAI.EditorToolkit
 
         public bool Remove()
         {
-            return _owner.Backend.Remove(Raw);
+            return _owner.Remove(Raw);
         }
     }
 }
