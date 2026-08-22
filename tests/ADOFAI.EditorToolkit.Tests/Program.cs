@@ -12,6 +12,7 @@ internal static class Program
         Run("create converts values and enables properties", CreateConvertsValues);
         Run("query and remove", QueryAndRemove);
         Run("action and decoration collections", Collections);
+        Run("detached level event scope", DetachedLevelEventScope);
         Run("commit refreshes and preserves selection", CommitRefreshes);
         Run("dispose rolls back", DisposeRollsBack);
         Run("failed commit rolls back", FailedCommitRollsBack);
@@ -68,6 +69,27 @@ internal static class Program
         Equal(1, Editor.Events.Query(new EventQuery { Collection = EventCollection.Decorations }).Count);
         Equal(1, backend.Level.Events.Count);
         Equal(1, backend.Level.Decorations.Count);
+    }
+
+    private static void DetachedLevelEventScope()
+    {
+        var backend = Configure();
+        var detached = backend.Level.Clone();
+        var events = Editor.Events.ForLevel(detached);
+
+        var action = events.Create("Twirl", 3);
+        var decoration = events.Create("AddObject", 4);
+
+        Equal(0, backend.Level.Events.Count);
+        Equal(0, backend.Level.Decorations.Count);
+        Equal(1, detached.Events.Count);
+        Equal(1, detached.Decorations.Count);
+        Equal(EventCollection.Actions, action.Collection);
+        Equal(EventCollection.Decorations, decoration.Collection);
+        Equal(1, events.Query("Twirl").Count);
+        Equal(1, events.Remove("Twirl", 3));
+        Equal(0, detached.Events.Count);
+        Equal(1, detached.Decorations.Count);
     }
 
     private static void CommitRefreshes()
@@ -190,7 +212,7 @@ internal sealed class FakeEditorBackend : IEditorBackend
     {
         Level = new FakeLevel();
         Selection = new List<int>();
-        _events = new DelegateEventBackend(
+        var inner = new DelegateEventBackend(
             CreateEvent,
             (value, collection) => Add((FakeEvent)value, collection),
             collection => Enumerate(collection),
@@ -206,6 +228,7 @@ internal sealed class FakeEditorBackend : IEditorBackend
             (value, key) => ((FakeEvent)value).Disabled[key],
             (value, key, disabled) => ((FakeEvent)value).Disabled[key] = disabled,
             value => Level.Events.Remove((FakeEvent)value) || Level.Decorations.Remove((FakeEvent)value));
+        _events = new FakeScopedEventBackend(inner);
     }
 
     public FakeLevel Level { get; private set; }
@@ -271,6 +294,80 @@ internal sealed class FakeEditorBackend : IEditorBackend
             foreach (var ev in Level.Events) yield return ev;
         if (collection == EventCollection.Decorations || collection == EventCollection.All)
             foreach (var ev in Level.Decorations) yield return ev;
+    }
+}
+
+internal sealed class FakeScopedEventBackend : IEventBackend, ILevelScopedEventBackend
+{
+    private readonly IEventBackend _inner;
+
+    public FakeScopedEventBackend(IEventBackend inner)
+    {
+        _inner = inner;
+    }
+
+    public object Create(string eventName, int floor) => _inner.Create(eventName, floor);
+    public void Add(object levelEvent, EventCollection collection) => _inner.Add(levelEvent, collection);
+    public IEnumerable<object> Enumerate(EventCollection collection) => _inner.Enumerate(collection);
+    public EventCollection GetCollection(object levelEvent) => _inner.GetCollection(levelEvent);
+    public string GetName(object levelEvent) => _inner.GetName(levelEvent);
+    public int GetFloor(object levelEvent) => _inner.GetFloor(levelEvent);
+    public bool HasProperty(object levelEvent, string key) => _inner.HasProperty(levelEvent, key);
+    public Type GetPropertyType(object levelEvent, string key) => _inner.GetPropertyType(levelEvent, key);
+    public object GetProperty(object levelEvent, string key) => _inner.GetProperty(levelEvent, key);
+    public void SetProperty(object levelEvent, string key, object value) => _inner.SetProperty(levelEvent, key, value);
+    public bool IsPropertyDisabled(object levelEvent, string key) => _inner.IsPropertyDisabled(levelEvent, key);
+    public void SetPropertyDisabled(object levelEvent, string key, bool disabled) => _inner.SetPropertyDisabled(levelEvent, key, disabled);
+    public bool Remove(object levelEvent) => _inner.Remove(levelEvent);
+
+    public void AddToLevel(object level, object levelEvent, EventCollection collection)
+    {
+        var data = RequireLevel(level);
+        var ev = (FakeEvent)levelEvent;
+        if (collection == EventCollection.Auto)
+            collection = ev.Name == "AddObject" ? EventCollection.Decorations : EventCollection.Actions;
+        GetList(data, collection).Add(ev);
+    }
+
+    public IEnumerable<object> EnumerateFromLevel(object level, EventCollection collection)
+    {
+        var data = RequireLevel(level);
+        var result = new List<object>();
+        if (collection == EventCollection.Actions || collection == EventCollection.All)
+            result.AddRange(data.Events.Cast<object>());
+        if (collection == EventCollection.Decorations || collection == EventCollection.All)
+            result.AddRange(data.Decorations.Cast<object>());
+        return result;
+    }
+
+    public EventCollection GetCollectionFromLevel(object level, object levelEvent)
+    {
+        var data = RequireLevel(level);
+        var ev = (FakeEvent)levelEvent;
+        if (data.Events.Contains(ev)) return EventCollection.Actions;
+        if (data.Decorations.Contains(ev)) return EventCollection.Decorations;
+        throw new InvalidOperationException("Event is not attached to the requested fake level.");
+    }
+
+    public bool RemoveFromLevel(object level, object levelEvent)
+    {
+        var data = RequireLevel(level);
+        var ev = (FakeEvent)levelEvent;
+        return data.Events.Remove(ev) || data.Decorations.Remove(ev);
+    }
+
+    private static FakeLevel RequireLevel(object level)
+    {
+        var data = level as FakeLevel;
+        if (data == null) throw new ArgumentException("Expected FakeLevel.", nameof(level));
+        return data;
+    }
+
+    private static List<FakeEvent> GetList(FakeLevel level, EventCollection collection)
+    {
+        if (collection == EventCollection.Actions) return level.Events;
+        if (collection == EventCollection.Decorations) return level.Decorations;
+        throw new ArgumentException(collection + " is not a writable collection.", nameof(collection));
     }
 }
 
