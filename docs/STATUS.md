@@ -23,13 +23,11 @@
 - `LevelEventInfo.isDecoration`による追加先の自動判定
 - 提供されたADOFAI Managed DLL一式のmetadataでadapterの参照型・memberを照合
 
-確認済み（0.1.0 baseline）:
+確認済み:
 
-- Coreとconsole test harnessのRelease build成功
-- console test 7件成功
-- 提供された`Assembly-CSharp.dll` / `RDTools.dll` / `UnityEngine.CoreModule.dll`に対するadapter compile成功
-
-0.1.1で追加したdetached-level変更はCore CIで再検証する。
+- Core CIでRelease build成功
+- console test 8件成功（detached `LevelData` scopeを含む）
+- 0.1.0 baselineで、提供された`Assembly-CSharp.dll` / `RDTools.dll` / `UnityEngine.CoreModule.dll`に対するadapter compile成功
 
 未検証:
 
