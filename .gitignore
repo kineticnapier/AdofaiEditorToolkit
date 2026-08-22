@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Build outputs are published via releases once the API stabilizes.
+# Keep currently committed preview artifacts until the first release is cut.
