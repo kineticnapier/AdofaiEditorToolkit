@@ -7,7 +7,7 @@ using global::ADOFAI;
 
 namespace ADOFAI.EditorToolkit.Game
 {
-    public sealed class ADOFAIEventBackend : IEventBackend
+    public sealed class ADOFAIEventBackend : IEventBackend, ILevelScopedEventBackend
     {
         private readonly Func<scnEditor> _getEditor;
 
@@ -24,40 +24,61 @@ namespace ADOFAI.EditorToolkit.Game
 
         public void Add(object levelEvent, EventCollection collection)
         {
+            AddToLevel(RequireCurrentLevel(), levelEvent, collection);
+        }
+
+        public void AddToLevel(object level, object levelEvent, EventCollection collection)
+        {
+            LevelData data = RequireLevel(level);
             LevelEvent ev = RequireEvent(levelEvent);
             if (collection == EventCollection.Auto)
                 collection = ev.info != null && ev.info.isDecoration
                     ? EventCollection.Decorations
                     : EventCollection.Actions;
-            IList list = GetList(collection);
-            list.Add(ev);
+            GetList(data, collection).Add(ev);
         }
 
         public IEnumerable<object> Enumerate(EventCollection collection)
         {
+            return EnumerateFromLevel(RequireCurrentLevel(), collection);
+        }
+
+        public IEnumerable<object> EnumerateFromLevel(object level, EventCollection collection)
+        {
+            LevelData data = RequireLevel(level);
+            var result = new List<object>();
+
             if (collection == EventCollection.Actions || collection == EventCollection.All)
             {
-                IList actions = GetList(EventCollection.Actions);
-                for (int i = 0; i < actions.Count; i++) yield return actions[i];
+                IList actions = GetList(data, EventCollection.Actions);
+                for (int i = 0; i < actions.Count; i++) result.Add(actions[i]);
             }
             if (collection == EventCollection.Decorations || collection == EventCollection.All)
             {
-                IList decorations = GetList(EventCollection.Decorations);
-                for (int i = 0; i < decorations.Count; i++) yield return decorations[i];
+                IList decorations = GetList(data, EventCollection.Decorations);
+                for (int i = 0; i < decorations.Count; i++) result.Add(decorations[i]);
             }
+
+            return result;
         }
 
         public EventCollection GetCollection(object levelEvent)
         {
-            IList actions = GetList(EventCollection.Actions);
+            return GetCollectionFromLevel(RequireCurrentLevel(), levelEvent);
+        }
+
+        public EventCollection GetCollectionFromLevel(object level, object levelEvent)
+        {
+            LevelData data = RequireLevel(level);
+            IList actions = GetList(data, EventCollection.Actions);
             for (int i = 0; i < actions.Count; i++)
                 if (ReferenceEquals(actions[i], levelEvent)) return EventCollection.Actions;
 
-            IList decorations = GetList(EventCollection.Decorations);
+            IList decorations = GetList(data, EventCollection.Decorations);
             for (int i = 0; i < decorations.Count; i++)
                 if (ReferenceEquals(decorations[i], levelEvent)) return EventCollection.Decorations;
 
-            throw new InvalidOperationException("The LevelEvent is not attached to the current LevelData.");
+            throw new InvalidOperationException("The LevelEvent is not attached to the requested LevelData.");
         }
 
         public string GetName(object levelEvent)
@@ -129,14 +150,20 @@ namespace ADOFAI.EditorToolkit.Game
 
         public bool Remove(object levelEvent)
         {
-            IList actions = GetList(EventCollection.Actions);
+            return RemoveFromLevel(RequireCurrentLevel(), levelEvent);
+        }
+
+        public bool RemoveFromLevel(object level, object levelEvent)
+        {
+            LevelData data = RequireLevel(level);
+            IList actions = GetList(data, EventCollection.Actions);
             if (actions.Contains(levelEvent))
             {
                 actions.Remove(levelEvent);
                 return true;
             }
 
-            IList decorations = GetList(EventCollection.Decorations);
+            IList decorations = GetList(data, EventCollection.Decorations);
             if (decorations.Contains(levelEvent))
             {
                 decorations.Remove(levelEvent);
@@ -145,21 +172,32 @@ namespace ADOFAI.EditorToolkit.Game
             return false;
         }
 
-        private IList GetList(EventCollection collection)
+        private LevelData RequireCurrentLevel()
+        {
+            scnEditor editor = _getEditor();
+            if (editor == null || editor.levelData == null)
+                throw new InvalidOperationException("ADOFAI stock editor has no active LevelData.");
+            return editor.levelData;
+        }
+
+        private static IList GetList(LevelData level, EventCollection collection)
         {
             if (collection == EventCollection.All || collection == EventCollection.Auto)
                 throw new ArgumentException(collection + " is not a single LevelData list.", nameof(collection));
 
-            scnEditor editor = _getEditor();
-            if (editor == null || editor.levelData == null)
-                throw new InvalidOperationException("ADOFAI stock editor has no active LevelData.");
-
             IList list = collection == EventCollection.Decorations
-                ? editor.levelData.decorations as IList
-                : editor.levelData.levelEvents as IList;
+                ? level.decorations as IList
+                : level.levelEvents as IList;
             if (list == null)
                 throw new InvalidOperationException("The requested LevelData event collection is not IList-compatible.");
             return list;
+        }
+
+        private static LevelData RequireLevel(object value)
+        {
+            LevelData level = value as LevelData;
+            if (level == null) throw new ArgumentException("The value is not ADOFAI LevelData.", nameof(value));
+            return level;
         }
 
         private static LevelEvent RequireEvent(object value)
