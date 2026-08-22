@@ -13,6 +13,7 @@
   - 未Commitの`Dispose()`時にrollback
   - refresh失敗時にもrollback
 - `Editor.Events.Create(...)`
+- `Editor.Events.ForLevel(level)`でdetached `LevelData`も操作
 - property metadataに基づく値の型変換
 - property設定時の`disabled = false`
 - eventのquery / remove
@@ -52,6 +53,17 @@ metadataが特殊なModイベントでは、必要に応じて`EventCollection.A
 ```csharp
 var speeds = Editor.Events.Query("SetSpeed");
 var removed = Editor.Events.Remove("Twirl", floor: 42);
+```
+
+MultiTileEditorのように、stock editorへまだ適用していない`LevelData.Copy()`を先に加工する場合はlevel-scoped serviceを使えます。
+
+```csharp
+var candidate = currentLevel.Copy();
+var events = Editor.Events.ForLevel(candidate);
+
+events.Create("OrbitDecoration", 10, EventCollection.Actions)
+    .Set("duration", 1.0)
+    .Set("ease", "Linear");
 ```
 
 ## ADOFAIとの接続
