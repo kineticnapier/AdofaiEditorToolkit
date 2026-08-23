@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build core
-        run: dotnet build ./src/ADOFAI.EditorToolkit/ADOFAI.EditorToolkit.csproj -c Release
+      - name: Build portable core
+        run: dotnet build ./src/ADOFAI.EditorToolkit/ADOFAI.EditorToolkit.csproj -c Release -f netstandard2.0
       - name: Run core tests
         run: dotnet run --project ./tests/ADOFAI.EditorToolkit.Tests/ADOFAI.EditorToolkit.Tests.csproj -c Release
