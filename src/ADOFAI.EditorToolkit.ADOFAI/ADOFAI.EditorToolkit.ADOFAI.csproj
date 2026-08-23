@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <Compile Include="ADOFAIEditorBackend.cs" />
+    <Compile Include="ADOFAIEditorUiHost.cs" />
     <Compile Include="ADOFAIEventBackend.cs" />
   </ItemGroup>
 
