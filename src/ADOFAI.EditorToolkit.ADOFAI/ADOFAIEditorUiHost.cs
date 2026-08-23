@@ -138,7 +138,10 @@ namespace ADOFAI.EditorToolkit.Game
             GameObject shortcutsObject = ToGameObject(shortcuts);
             if (shortcutsObject != null && shortcutsObject.transform.parent == host.parent)
             {
-                host.SetSiblingIndex(shortcutsObject.transform.GetSiblingIndex());
+                int currentIndex = host.GetSiblingIndex();
+                int shortcutIndex = shortcutsObject.transform.GetSiblingIndex();
+                int targetIndex = currentIndex < shortcutIndex ? shortcutIndex - 1 : shortcutIndex;
+                host.SetSiblingIndex(Math.Max(0, targetIndex));
                 return;
             }
 
