@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using UnityEngine;
 
 namespace ADOFAI.EditorToolkit.Game
@@ -211,12 +210,12 @@ namespace ADOFAI.EditorToolkit.Game
         private static object GetMemberObject(scnEditor editor, string name)
         {
             Type type = editor.GetType();
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public;
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
 
-            FieldInfo field = type.GetField(name, flags);
+            System.Reflection.FieldInfo field = type.GetField(name, flags);
             if (field != null) return field.GetValue(editor);
 
-            PropertyInfo property = type.GetProperty(name, flags);
+            System.Reflection.PropertyInfo property = type.GetProperty(name, flags);
             if (property != null && property.CanRead) return property.GetValue(editor, null);
 
             return null;
