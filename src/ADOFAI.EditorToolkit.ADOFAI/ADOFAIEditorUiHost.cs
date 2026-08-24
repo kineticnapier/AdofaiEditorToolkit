@@ -83,20 +83,29 @@ namespace ADOFAI.EditorToolkit.Game
         }
 
         /// <summary>
-        /// Gets or creates a child RectTransform that occupies the currently usable chart viewport,
-        /// excluding only stock chrome that is actually visible on-screen.
-        /// Call this again when stock panels may have opened/closed; the same host is reused and
-        /// its offsets are refreshed from the live hierarchy.
+        /// Gets or creates a RectTransform that occupies the currently usable chart viewport,
+        /// excluding only stock chrome that is actually visible on-screen. The returned host
+        /// automatically follows inspector open/close animations afterwards.
         /// </summary>
         public static RectTransform GetOrCreateViewportRoot(string name)
         {
             RectTransform overlay = GetOrCreateOverlayRoot(name);
+            RefreshViewportRoot(overlay);
+
+            EditorViewportHostFollower follower = overlay.GetComponent<EditorViewportHostFollower>();
+            if (follower == null) follower = overlay.gameObject.AddComponent<EditorViewportHostFollower>();
+            follower.Target = overlay;
+            return overlay;
+        }
+
+        internal static void RefreshViewportRoot(RectTransform overlay)
+        {
+            if (overlay == null || ADOBase.editor == null) return;
             EditorUiInsets insets = MeasureViewportInsets();
             Stretch(
                 overlay,
                 new Vector2(insets.Left, insets.Bottom),
                 new Vector2(-insets.Right, -insets.Top));
-            return overlay;
         }
 
         /// <summary>
@@ -195,12 +204,10 @@ namespace ADOFAI.EditorToolkit.Game
 
             if (leftSide)
             {
-                // A left inspector only reserves space while it still touches the left edge.
                 if (minX > rootRect.xMin + EdgeEpsilon || maxX <= rootRect.xMin) return 0f;
                 return Mathf.Clamp(maxX - rootRect.xMin, 0f, rootRect.width);
             }
 
-            // Same rule mirrored for the right inspector.
             if (maxX < rootRect.xMax - EdgeEpsilon || minX >= rootRect.xMax) return 0f;
             return Mathf.Clamp(rootRect.xMax - minX, 0f, rootRect.width);
         }
@@ -261,6 +268,17 @@ namespace ADOFAI.EditorToolkit.Game
             if (property != null && property.CanRead) return property.GetValue(editor, null);
 
             return null;
+        }
+    }
+
+    internal sealed class EditorViewportHostFollower : MonoBehaviour
+    {
+        internal RectTransform Target;
+
+        private void LateUpdate()
+        {
+            if (Target == null || ADOBase.editor == null) return;
+            ADOFAIEditorUiHost.RefreshViewportRoot(Target);
         }
     }
 
