@@ -14,6 +14,7 @@ namespace ADOFAI.EditorToolkit.Game
         private const float FallbackRight = 340f;
         private const float FallbackTop = 55f;
         private const float FallbackBottom = 120f;
+        private const float EdgeEpsilon = 2f;
 
         /// <summary>The stock <c>/levelEditorScene</c> RectTransform.</summary>
         public static RectTransform Root
@@ -29,16 +30,22 @@ namespace ADOFAI.EditorToolkit.Game
 
         /// <summary>
         /// Measures the stock editor chrome around the central chart viewport.
-        /// Values are expressed in the stock editor canvas coordinate system (1600x900 in ADOFAI 3.3.1).
+        /// Side inspectors are measured by their current overlap with the root canvas, so a
+        /// closed/sliding inspector reserves only the portion that is actually on-screen.
+        /// Values are expressed in the stock editor canvas coordinate system.
         /// </summary>
         public static EditorUiInsets MeasureViewportInsets()
         {
             scnEditor editor = RequireEditor();
+            RectTransform root = Root;
 
-            float left = WidthOf(GetMemberObject(editor, "settingsPanel"), FallbackLeft);
-            float right = WidthOf(GetMemberObject(editor, "levelEventsPanel"), FallbackRight);
+            object settings = GetMemberObject(editor, "settingsPanel");
+            object eventsPanel = GetMemberObject(editor, "levelEventsPanel");
+
+            float left = SideOverlap(settings, root, true, FallbackLeft);
+            float right = SideOverlap(eventsPanel, root, false, FallbackRight);
             float bottom = HeightOf(GetMemberObject(editor, "levelStringPanel"), FallbackBottom);
-            float top = TopInsetOf(GetMemberObject(editor, "settingsPanel"), FallbackTop);
+            float top = TopInsetOf(settings, FallbackTop);
 
             return new EditorUiInsets(left, right, top, bottom);
         }
@@ -76,8 +83,10 @@ namespace ADOFAI.EditorToolkit.Game
         }
 
         /// <summary>
-        /// Gets or creates a child RectTransform that occupies only the central chart viewport,
-        /// excluding the stock left/right inspectors, top chrome and bottom event controls.
+        /// Gets or creates a child RectTransform that occupies the currently usable chart viewport,
+        /// excluding only stock chrome that is actually visible on-screen.
+        /// Call this again when stock panels may have opened/closed; the same host is reused and
+        /// its offsets are refreshed from the live hierarchy.
         /// </summary>
         public static RectTransform GetOrCreateViewportRoot(string name)
         {
@@ -171,16 +180,48 @@ namespace ADOFAI.EditorToolkit.Game
             rect.localScale = Vector3.one;
         }
 
-        private static float WidthOf(object value, float fallback)
+        private static float SideOverlap(object value, RectTransform root, bool leftSide, float fallback)
         {
             RectTransform rect = RectOf(value);
-            return rect != null && rect.rect.width > 0f ? rect.rect.width : fallback;
+            if (rect == null) return fallback;
+            if (!rect.gameObject.activeInHierarchy) return 0f;
+
+            Rect rootRect = root.rect;
+            if (rootRect.width <= 0f) return fallback;
+
+            float minX;
+            float maxX;
+            GetHorizontalBoundsInRoot(rect, root, out minX, out maxX);
+
+            if (leftSide)
+            {
+                // A left inspector only reserves space while it still touches the left edge.
+                if (minX > rootRect.xMin + EdgeEpsilon || maxX <= rootRect.xMin) return 0f;
+                return Mathf.Clamp(maxX - rootRect.xMin, 0f, rootRect.width);
+            }
+
+            // Same rule mirrored for the right inspector.
+            if (maxX < rootRect.xMax - EdgeEpsilon || minX >= rootRect.xMax) return 0f;
+            return Mathf.Clamp(rootRect.xMax - minX, 0f, rootRect.width);
+        }
+
+        private static void GetHorizontalBoundsInRoot(RectTransform rect, RectTransform root, out float minX, out float maxX)
+        {
+            Rect local = rect.rect;
+            Vector3 leftWorld = rect.TransformPoint(new Vector3(local.xMin, local.center.y, 0f));
+            Vector3 rightWorld = rect.TransformPoint(new Vector3(local.xMax, local.center.y, 0f));
+            float a = root.InverseTransformPoint(leftWorld).x;
+            float b = root.InverseTransformPoint(rightWorld).x;
+            minX = Mathf.Min(a, b);
+            maxX = Mathf.Max(a, b);
         }
 
         private static float HeightOf(object value, float fallback)
         {
             RectTransform rect = RectOf(value);
-            return rect != null && rect.rect.height > 0f ? rect.rect.height : fallback;
+            if (rect == null) return fallback;
+            if (!rect.gameObject.activeInHierarchy) return 0f;
+            return rect.rect.height > 0f ? rect.rect.height : fallback;
         }
 
         private static float TopInsetOf(object value, float fallback)
@@ -188,7 +229,8 @@ namespace ADOFAI.EditorToolkit.Game
             RectTransform rect = RectOf(value);
             if (rect == null) return fallback;
 
-            // Stock side inspectors are top-anchored with anchoredPosition.y == -55 in ADOFAI 3.3.1.
+            // Stock side inspectors are top-anchored below the editor's top file/status chrome.
+            // Keep this inset even while the inspector itself slides horizontally closed.
             float inset = -rect.anchoredPosition.y;
             return inset >= 0f && inset < Root.rect.height ? inset : fallback;
         }
