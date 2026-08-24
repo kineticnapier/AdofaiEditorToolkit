@@ -235,9 +235,9 @@ namespace ADOFAI.EditorToolkit.Game
         {
             RectTransform rect = RectOf(value);
             if (rect == null) return fallback;
+            if (!rect.gameObject.activeInHierarchy) return 0f;
 
             // Stock side inspectors are top-anchored below the editor's top file/status chrome.
-            // Keep this inset even while the inspector itself slides horizontally closed.
             float inset = -rect.anchoredPosition.y;
             return inset >= 0f && inset < Root.rect.height ? inset : fallback;
         }
